@@ -5,12 +5,21 @@ from datetime import datetime
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
+class EducationLevel(Base):
+    __tablename__ = "education_levels"
+    id = Column(Integer, primary_key=True, index=True)
+    name = Column(String, unique=True, index=True, nullable=False)
+    description = Column(String, nullable=True)
+    classes = relationship("Class", back_populates="education_level")
+
 class Class(Base):
     __tablename__ = "classes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
     tagline = Column(String, nullable=True)
     image_link = Column(String, nullable=True)
+    level_id = Column(Integer, ForeignKey("education_levels.id"))
+    education_level = relationship("EducationLevel", back_populates="classes")
     subjects = relationship("Subject", back_populates="class_")
 
 class Subject(Base):

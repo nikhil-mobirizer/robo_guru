@@ -102,7 +102,10 @@ class ClassBase(BaseModel):
     image_link: str
 
 class ClassCreate(ClassBase):
-    pass
+    name: str
+    tagline: str 
+    level_id: int
+    image_link: str
 
 class ReadClassesRequest(BaseModel):
     limit: Optional[int] = 10
@@ -120,6 +123,27 @@ class Class(ClassBase):
     class Config:
         from_attributes = True  
 
+class EducationLevelBase(BaseModel):
+    name: str
+    description: Optional[str] = None
+
+class EducationLevelCreate(EducationLevelBase):
+    pass
+
+class ReadEducationLevelRequest(BaseModel):
+    limit: Optional[int] = 10
+    name: Optional[str] = None
+
+class EducationLevel(EducationLevelBase):
+    id: int
+
+class EducationLevelResponse(EducationLevelBase):
+    id: int
+    classes: List[str] = []
+
+    class Config:
+        orm_mode = True
+        
 class ResponseModel(BaseModel):
     message: str
     data: Optional[Dict] = None

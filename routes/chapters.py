@@ -42,7 +42,8 @@ def read_all_chapters(
         limit = request.limit
         name = request.name
         chapters_list = services.chapters.get_all_chapters(db, limit=limit, name=name)
-
+        if not chapters_list:
+            return create_response(success=False, message="No chapters found for the subject")        
         response_data = [
             {
                 "id": sub.id,
@@ -67,7 +68,7 @@ async def get_chapters_by_subject(
     try:
         chapters = services.chapters.get_chapters_by_subject(db, subject_id)
         if not chapters:
-            raise HTTPException(status_code=404, detail="No chapters found for the subject")
+            return create_response(success=False, message="No chapters found for the subject")
         response_data = [
             {
                 "id": sub.id,

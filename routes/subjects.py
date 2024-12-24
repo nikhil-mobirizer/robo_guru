@@ -43,7 +43,8 @@ def read_all_subjects(
         limit = request.limit
         name = request.name
         subjects_list = services.subjects.get_all_subjects(db, limit=limit, name=name)
-
+        if not subjects_list:
+            return create_response(success=False, message="No subjects found for the class")
         response_data = [
             {
                 "id": sub.id,
@@ -68,7 +69,7 @@ async def get_subjects_by_class(
     try:
         subjects = services.subjects.get_subjects_by_class(db, class_id)
         if not subjects:
-            raise HTTPException(status_code=404, detail="No subjects found for the class")
+            return create_response(success=False, message="No subjects found for the class")
         response_data = [
             {
                 "id": sub.id,
@@ -82,7 +83,7 @@ async def get_subjects_by_class(
 
         return create_response(success=True, message="Subjects retrieved successfully", data=response_data)
     except Exception as e:
-        return create_response(success=False, message="An unexpected error occurred")
+        return create_response(success=False, message= f"An unexpected error occurred: {str(e)}")
 
 
 

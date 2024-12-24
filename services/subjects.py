@@ -6,6 +6,7 @@ from models import Class
 
 # Get subjects by class_id from the database
 def get_subjects_by_class(db: Session, class_id: int):
+    
     return db.query(Subject).filter(Subject.class_id == class_id).all()
 
 # Get all subjects from the database

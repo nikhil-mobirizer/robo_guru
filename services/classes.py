@@ -1,5 +1,5 @@
 from sqlalchemy.orm import Session
-from models import Class
+from models import EducationLevel, Class
 from schemas import ClassCreate
 from fastapi import HTTPException
 from typing import List, Optional
@@ -18,12 +18,12 @@ def get_all_classes(db: Session, limit: int = 10, name: str = None):
     return query.limit(limit).all()
 
 
-def create_class_in_db(db: Session, class_: ClassCreate):
-    existing_class = db.query(Class).filter(Class.name == class_.name).first()
-    if existing_class:
+def create_class_in_db(db: Session, classes: ClassCreate):
+    existing_class = db.query(EducationLevel).filter(EducationLevel.id == classes.level_id).first()
+    if not existing_class:
         raise HTTPException(status_code=400, detail="Class already exists")
 
-    db_class = Class(name=class_.name, tagline=class_.tagline, image_link=class_.image_link)
+    db_class = Class(name=classes.name, tagline=classes.tagline, level_id=classes.level_id, image_link=classes.image_link)
     db.add(db_class)
     db.commit()
     db.refresh(db_class)
@@ -39,8 +39,9 @@ def create_response(success: bool, message: str, data: dict = None):
         }
     )
 
-
-
+# Get classes by education level ID
+def get_class_by_level(db: Session, level_id: int):
+    return db.query(Class).filter(Class.level_id == level_id).all()
 
 
 

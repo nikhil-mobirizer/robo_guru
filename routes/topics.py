@@ -42,7 +42,8 @@ def read_all_topics(
         limit = request.limit
         name = request.name
         topics = services.topics.get_all_topics(db, limit=limit, name=name)
-
+        if not topics:
+            return create_response(success=False, message="No topic found for the chapter")
         response_data = [
             {
                 "id": sub.id,
@@ -69,7 +70,7 @@ def read_topic(
     try:
         db_topic = services.topics.get_topics_by_chapter(db=db, chapter_id=chapter_id)
         if not db_topic:
-            raise HTTPException(status_code=404, detail="No topics found for the chapter")
+            return create_response(success=False, message="No topic found for the chapter")
         response_data = [
             {
                 "id": sub.id,

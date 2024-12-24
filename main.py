@@ -1,7 +1,7 @@
 from fastapi import FastAPI, Request, Depends
 from database import engine, get_db
 import models
-from routes import classes, subjects, chapters, topics, login, chat
+from routes import classes, subjects, chapters, topics, login, chat, level
 # from fastapi.templating import Jinja2Templates
 # from fastapi.responses import HTMLResponse
 import services 
@@ -13,6 +13,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.include_router(login.router, tags=["login"])
+app.include_router(level.router, prefix="/level", tags=["level"])
 app.include_router(classes.router, prefix="/classes", tags=["classes"])
 app.include_router(subjects.router, prefix="/subjects", tags=["subjects"])
 app.include_router(chapters.router, prefix="/chapters", tags=["chapters"])
