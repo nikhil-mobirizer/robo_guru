@@ -77,7 +77,7 @@ def read_level(
     except Exception as e:
         return create_response(success=False, message="An unexpected error occurred")
 
-@router.get("/all_data", response_model=None)
+@router.get("/levels/all_data", response_model=None)
 def read_levels(
     limit: int = 1000,
     name: str = None,

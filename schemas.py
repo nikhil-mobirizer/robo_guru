@@ -184,19 +184,3 @@ class SessionResponse(SessionBase):
     class Config:
         from_attributes = True
 
-
-# class ChatHistory(BaseModel):
-#     user: str
-#     bot: str
-
-# class ChatRequest(BaseModel):
-#     user_query: str
-
-# class ChatResponse(BaseModel):
-#     detailed_timeline: Optional[str]
-#     educational_insights: Optional[str]
-
-# class GoogleSignInRequest(BaseModel):
-#     device_id: str
-#     email: EmailStr
-#     name: str
