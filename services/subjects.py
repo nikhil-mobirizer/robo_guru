@@ -3,15 +3,23 @@ from models import Subject
 from schemas import SubjectCreate
 from fastapi import HTTPException
 from models import Class
+from typing import Optional
+
+
+# CRUD operations for Chapter
+def get_subject_by_id(db: Session, subject_id: int):
+    return db.query(Subject).filter(Subject.id == subject_id, Subject.is_deleted == False).first()
 
 # Get subjects by class_id from the database
 def get_subjects_by_class(db: Session, class_id: int):
     
-    return db.query(Subject).filter(Subject.class_id == class_id).all()
+    return db.query(Subject).filter(Subject.class_id == class_id, Subject.is_deleted == False).all()
 
 # Get all subjects from the database
-def get_all_subjects(db: Session, limit: int = 10, name: str = None):
-    query = db.query(Subject)
+def get_all_subjects(db: Session, limit: int = 10, name: Optional[str] = None):
+    query = db.query(Subject).filter(
+        Subject.is_deleted == False
+    )
 
     if name:
         query = query.filter(Subject.name.ilike(f"%{name}%"))
@@ -28,3 +36,4 @@ def create_subject(db: Session, subject: SubjectCreate):
     db.commit()
     db.refresh(db_subject)
     return db_subject
+

@@ -3,7 +3,7 @@ from fastapi.security import OAuth2PasswordBearer
 from datetime import datetime, timedelta
 from jose import JWTError, jwt
 from core.config import settings
-
+from models import User
 
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
 
@@ -22,3 +22,5 @@ def get_current_user(token: str = Depends(oauth2_scheme)):
         return {"id": user_id, "username": payload.get("username")}
     except JWTError:
         raise HTTPException(status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token")
+    
+    

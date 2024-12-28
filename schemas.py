@@ -1,4 +1,4 @@
-from pydantic import BaseModel, EmailStr
+from pydantic import BaseModel, Field, root_validator
 from typing import Optional, Dict, List
 from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
@@ -21,13 +21,11 @@ class ReadTopicRequest(BaseModel):
     limit: Optional[int] = 10
     name: Optional[str] = None
 
-class TopicData(TopicBase):
-    id: int
-    name: str
-    details: Optional[str] = None
-    tagline: str 
-    chapter_id: int
-    image_link: str
+class TopicUpdate(BaseModel):
+    name: Optional[str]
+    details: Optional[str]
+    chapter_id: Optional[int]
+    image_link: Optional[str]
 
 
 class Topic(TopicBase):
@@ -51,12 +49,11 @@ class ReadChapterRequest(BaseModel):
     limit: Optional[int] = 10
     name: Optional[str] = None
 
-class ChapterData(ChapterBase):
-    id: int
-    name: str
-    tagline: str 
-    subject_id: int 
-    image_link: str
+class ChapterUpdate(BaseModel):
+    name: Optional[str]
+    tagline: Optional[str] 
+    subject_id: Optional[int] 
+    image_link: Optional[str]
 
 
 class Chapter(ChapterBase):
@@ -80,6 +77,12 @@ class SubjectCreate(SubjectBase):
     tagline: str 
     class_id : int 
     image_link: str
+
+class SubjectUpdate(BaseModel):
+    name: Optional[str]
+    tagline: Optional[str]
+    class_id: Optional[int]
+    image_link: Optional[str]
 
 class SubjectData(SubjectBase):
     id: int
@@ -111,11 +114,11 @@ class ReadClassesRequest(BaseModel):
     limit: Optional[int] = 10
     name: Optional[str] = None
     
-class ClassData(ClassBase):
-    id: int
-    tagline: str 
-    image_link: str
-    subjects: list[Subject] = []
+class ClassUpdate(BaseModel):
+    level_id: Optional[int]
+    name: Optional[str]
+    tagline: Optional[str]
+    image_link: Optional[str]
 
 class Class(ClassBase):
     id: int
@@ -130,6 +133,10 @@ class EducationLevelBase(BaseModel):
 class EducationLevelCreate(EducationLevelBase):
     pass
 
+class EducationLevelUpdate(BaseModel):
+    name: Optional[str]
+    description: Optional[str]
+
 class ReadEducationLevelRequest(BaseModel):
     limit: Optional[int] = 10
     name: Optional[str] = None
@@ -142,7 +149,7 @@ class EducationLevelResponse(EducationLevelBase):
     classes: List[str] = []
 
     class Config:
-        orm_mode = True
+        from_attributes = True
         
 class ResponseModel(BaseModel):
     message: str
@@ -183,4 +190,44 @@ class SessionResponse(SessionBase):
 
     class Config:
         from_attributes = True
+
+class UserCreate(BaseModel):
+    mobile_number: str = Field(..., pattern=r"^\d{10}$")
+    name: Optional[str] = None
+    date_of_birth: Optional[str] = None
+    occupation: Optional[str] = None
+    type: str = Field(default="normal")
+
+    class Config:
+        orm_mode = True
+
+@root_validator(pre=True)
+def validate_date_of_birth(cls, values):
+    dob = values.get("date_of_birth")
+    if dob:
+        try:
+            # Parse the date in the desired format
+            values["date_of_birth"] = datetime.strptime(dob, "%d-%m-%Y").date()
+        except ValueError:
+            raise ValueError("date_of_birth must be in DD-MM-YYYY format")
+    return values
+
+class UpdateRoleRequest(BaseModel):
+    role: str
+
+class OTPRequest(BaseModel):
+    mobile_number: str
+
+class OTPVerification(BaseModel):
+    mobile_number: str
+    otp: str
+
+class AdminLogin(BaseModel):
+    mobile_number: str
+    otp: str
+
+
+class CurrentUser(BaseModel):
+    user_id: str
+    type: str
 

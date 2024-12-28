@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional
 import schemas
@@ -6,6 +6,8 @@ from database import get_db
 import services.topics
 from services.auth import get_current_user 
 from services.classes import create_response
+from datetime import datetime
+
 router = APIRouter()
 
 @router.post("/", response_model=None)
@@ -34,13 +36,12 @@ def create_topic(
 
 @router.get("/", response_model=None)
 def read_all_topics(
-    request: schemas.ReadTopicRequest, 
+    limit: int = Query(10, description="Number of records to retrieve"),
+    name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),   
 ):
     try:
-        limit = request.limit
-        name = request.name
         topics = services.topics.get_all_topics(db, limit=limit, name=name)
         if not topics:
             return create_response(success=False, message="No topic found for the chapter")
@@ -87,10 +88,68 @@ def read_topic(
     except Exception as e:
         return create_response(success=False, message=f"An unexpected error occurred: {e}")
 
+@router.put("/{topic_id}", response_model=None)
+def edit_topic(
+    topic_id: int,
+    updated_topic: schemas.TopicUpdate = Body(...),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        db_topic = services.topics.get_topic(db=db, topic_id=topic_id)
+        if not db_topic or db_topic.is_deleted:
+            raise HTTPException(status_code=404, detail="Topic not found or deleted")
+
+        # Update the topic fields
+        db_topic.name = updated_topic.name
+        db_topic.details = updated_topic.details
+        db_topic.tagline = updated_topic.tagline
+        db_topic.image_link = updated_topic.image_link
+        db_topic.chapter_id = updated_topic.chapter_id
+
+        # Validate chapter existence
+        chapter = services.chapters.get_chapter(db=db, chapter_id=updated_topic.chapter_id)
+        if not chapter:
+            raise HTTPException(status_code=400, detail="Invalid chapter ID")
+        
+        db.add(db_topic)
+        db.commit()
+        db.refresh(db_topic)
+
+        response_data = {
+            "id": db_topic.id,
+            "name": db_topic.name,
+            "details": db_topic.details,
+            "tagline": db_topic.tagline,
+            "image_link": db_topic.image_link,
+            "chapter_id": db_topic.chapter_id,
+        }
+        return create_response(success=True, message="Topic updated successfully", data=response_data)
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message="An unexpected error occurred")
 
 
+@router.delete("/{topic_id}", response_model=None)
+def soft_delete_topic(
+    topic_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        db_topic = services.topics.get_topic(db=db, topic_id=topic_id)
+        if not db_topic or db_topic.is_deleted:
+            raise HTTPException(status_code=404, detail="Topic not found or already deleted")
 
-# @router.get("/all_data", response_model=List[schemas.TopicData])
-# def read_topics(skip: int = 0, limit: int = 1000, db: Session = Depends(get_db)):
-#     topics = services.topics.get_topics(db, skip=skip, limit=limit)
-#     return topics
+        # Perform soft delete
+        db_topic.is_deleted = True
+        db_topic.deleted_at = datetime.utcnow()
+        db.commit()
+
+        return create_response(success=True, message="Topic deleted successfully")
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message="An unexpected error occurred")
+

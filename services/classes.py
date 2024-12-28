@@ -9,9 +9,10 @@ def get_class(db: Session, class_id: int):
     return db.query(Class).filter(Class.id == class_id).first()
 
 
-def get_all_classes(db: Session, limit: int = 10, name: str = None):
-    query = db.query(Class)
-    
+def get_all_classes(db: Session, limit: int = 10, name: Optional[str] = None):
+    query = db.query(Class).filter(
+        Class.is_deleted == False
+        )
     if name:
         query = query.filter(Class.name.ilike(f"%{name}%"))
     
@@ -41,12 +42,6 @@ def create_response(success: bool, message: str, data: dict = None):
 
 # Get classes by education level ID
 def get_class_by_level(db: Session, level_id: int):
-    return db.query(Class).filter(Class.level_id == level_id).all()
+    return db.query(Class).filter(Class.level_id == level_id, Class.is_deleted == False).all()
 
 
-
-# def get_classes_by_name(db: Session, name: str, limit: int = 10):
-#     query = db.query(Class)
-#     if name:  # If a name is provided, filter the results
-#         query = query.filter(Class.name.ilike(f"%{name}%"))  # Case-insensitive search
-#     return query.limit(limit).all()

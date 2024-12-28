@@ -4,7 +4,6 @@ import tiktoken
 from typing import List
 import openai
 from sqlalchemy.orm import Session
-from datetime import datetime
 from fastapi import HTTPException
 import schemas
 from sqlalchemy.orm import joinedload

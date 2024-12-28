@@ -20,12 +20,17 @@ def create_education_level(db: Session, level: EducationLevelCreate):
 
 
 def get_education_level(db: Session, level_id: int):
-    return db.query(EducationLevel).filter(EducationLevel.id == level_id).first()
+    return db.query(EducationLevel).filter(
+        EducationLevel.id == level_id, 
+        EducationLevel.is_deleted == False
+        ).first()
 
-
-def get_all_education_levels(db: Session, limit: int = 10, name: str = None):
-    query = db.query(EducationLevel)
+def get_all_education_levels(db: Session, limit: int = 10, name: Optional[str] = None):
+    query = db.query(EducationLevel).filter(
+        EducationLevel.is_deleted == False
+        )
     if name:
         query = query.filter(EducationLevel.name.ilike(f"%{name}%"))
     
     return query.limit(limit).all()
+

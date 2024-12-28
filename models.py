@@ -5,14 +5,20 @@ from datetime import datetime
 import uuid
 from sqlalchemy.dialects.postgresql import UUID
 
-class EducationLevel(Base):
+class BaseMixin:
+    is_deleted = Column(Boolean, default=False)
+    created_at = Column(DateTime, default=datetime.utcnow, nullable=False)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False)
+    deleted_at = Column(DateTime, nullable=True)
+
+class EducationLevel(Base, BaseMixin):
     __tablename__ = "education_levels"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
     classes = relationship("Class", back_populates="education_level")
 
-class Class(Base):
+class Class(Base, BaseMixin):
     __tablename__ = "classes"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
@@ -22,7 +28,7 @@ class Class(Base):
     education_level = relationship("EducationLevel", back_populates="classes")
     subjects = relationship("Subject", back_populates="class_")
 
-class Subject(Base):
+class Subject(Base, BaseMixin):
     __tablename__ = "subjects"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
@@ -32,7 +38,7 @@ class Subject(Base):
     class_ = relationship("Class", back_populates="subjects")
     chapters = relationship("Chapter", back_populates="subject")
 
-class Chapter(Base):
+class Chapter(Base, BaseMixin):
     __tablename__ = "chapters"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
@@ -42,7 +48,7 @@ class Chapter(Base):
     subject = relationship("Subject", back_populates="chapters")
     topics = relationship("Topic", back_populates="chapter")
 
-class Topic(Base):
+class Topic(Base, BaseMixin):
     __tablename__ = "topics"
     id = Column(Integer, primary_key=True, index=True)
     name = Column(String, index=True)
@@ -53,8 +59,9 @@ class Topic(Base):
     chapter = relationship("Chapter", back_populates="topics")
 
 # User model
-class User(Base):
+class User(Base, BaseMixin):
     __tablename__ = "users"
+    
     user_id = Column(String, primary_key=True,default=lambda: str(uuid.uuid4()), index=True)
     device_id = Column(String, unique=True, index=True)
     name = Column(String, nullable=True)
@@ -66,7 +73,16 @@ class User(Base):
     occupation = Column(String, nullable=True)
     image_link = Column(String, nullable=True)
 
-class SessionModel(Base):
+    # User type (primary role)
+    type = Column(Enum("superadmin", "admin", "staff", "normal", name="user_type"), default="normal")
+
+    # Boolean flags for roles
+    is_superadmin = Column(Boolean, default=False)
+    is_admin = Column(Boolean, default=False)
+    is_staff = Column(Boolean, default=False)
+    is_normal = Column(Boolean, default=True)
+
+class SessionModel(Base, BaseMixin):
     __tablename__ = "sessions"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -78,7 +94,7 @@ class SessionModel(Base):
     chats = relationship("ChatModel", back_populates="session")
 
 
-class ChatModel(Base):
+class ChatModel(Base, BaseMixin):
     __tablename__ = "chats"
 
     id = Column(UUID(as_uuid=True), primary_key=True, default=uuid.uuid4)
@@ -89,20 +105,3 @@ class ChatModel(Base):
     timestamp = Column(DateTime, default=datetime.utcnow)
 
     session = relationship("SessionModel", back_populates="chats")
-
-
-
-
-
-
-
-
-
-
-# class ChatHistory(Base):
-#     __tablename__ = "chat_history"
-#     id = Column(Integer, primary_key=True, autoincrement=True) 
-#     user_id = Column(String, index=True) 
-#     user = Column(String, index=True)
-#     bot = Column(String, index=True)
-#     timestamp = Column(DateTime, default=datetime.utcnow) 

@@ -1,11 +1,8 @@
 from fastapi import FastAPI, Request, Depends
 from database import engine, get_db
 import models
-from routes import classes, subjects, chapters, topics, login, chat, level
-# from fastapi.templating import Jinja2Templates
-# from fastapi.responses import HTMLResponse
-import services 
-from sqlalchemy.orm import Session
+from routes import classes, subjects, chapters, topics, login, chat, level, users
+from services.users import create_superadmin
 
 
 models.Base.metadata.create_all(bind=engine)
@@ -13,6 +10,7 @@ models.Base.metadata.create_all(bind=engine)
 app = FastAPI()
 
 app.include_router(login.router, tags=["login"])
+app.include_router(users.router, prefix="/users", tags=["Users"])
 app.include_router(level.router, prefix="/level", tags=["level"])
 app.include_router(classes.router, prefix="/classes", tags=["classes"])
 app.include_router(subjects.router, prefix="/subjects", tags=["subjects"])
@@ -20,16 +18,10 @@ app.include_router(chapters.router, prefix="/chapters", tags=["chapters"])
 app.include_router(topics.router, prefix="/topics", tags=["topics"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
 
-
-# templates = Jinja2Templates(directory="templates")
-
-# @app.get("/", response_class=HTMLResponse)
-# async def read_root(request: Request, db: Session = Depends(get_db)):
-#     classes = services.classes.get_classes(db=db)
-#     return templates.TemplateResponse("index2.html", {"request": request, "classes": classes})
-
-
-
+@app.on_event("startup")
+def on_startup():
+    db = next(get_db())
+    create_superadmin(db)
 
 
 

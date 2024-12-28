@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, Form, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from typing import List, Optional
 import schemas
 from database import get_db
@@ -6,6 +6,8 @@ import services.chapters
 from sqlalchemy.orm import Session
 from services.auth import get_current_user
 from services.classes import create_response
+from models import Subject
+from datetime import datetime
 
 router = APIRouter()
 
@@ -34,13 +36,12 @@ def create_chapter(
 
 @router.get("/", response_model=None)
 def read_all_chapters(
-    request: schemas.ReadChapterRequest, 
+    limit: int = Query(10, description="Number of records to retrieve"),
+    name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user), 
 ):
     try:
-        limit = request.limit
-        name = request.name
         chapters_list = services.chapters.get_all_chapters(db, limit=limit, name=name)
         if not chapters_list:
             return create_response(success=False, message="No chapters found for the subject")        
@@ -84,7 +85,68 @@ async def get_chapters_by_subject(
     except Exception as e:
         return create_response(success=False, message="An unexpected error occurred")
 
+@router.put("/{chapter_id}", response_model=None)
+def update_chapter(
+    chapter_id: int,
+    chapter_data: schemas.ChapterUpdate = Body(...),
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        db_chapter = services.chapters.get_chapter(db, chapter_id)
+        if not db_chapter:
+            raise HTTPException(status_code=404, detail="Chapter not found")
 
+        # Validate subject_id if provided
+        if chapter_data.subject_id:
+            subject = db.query(Subject).filter(Subject.id == chapter_data.subject_id).first()
+            if not subject:
+                raise HTTPException(status_code=400, detail="Invalid subject_id")
+
+        # Update chapter fields
+        db_chapter.name = chapter_data.name or db_chapter.name
+        db_chapter.tagline = chapter_data.tagline or db_chapter.tagline
+        db_chapter.image_link = chapter_data.image_link or db_chapter.image_link
+        db_chapter.subject_id = chapter_data.subject_id or db_chapter.subject_id
+
+        db.add(db_chapter)
+        db.commit()
+        db.refresh(db_chapter)
+
+        response_data = {
+            "id": db_chapter.id,
+            "name": db_chapter.name,
+            "subject_id": db_chapter.subject_id,
+            "tagline": db_chapter.tagline,
+            "image_link": db_chapter.image_link,
+        }
+        return create_response(success=True, message="Chapter updated successfully", data=response_data)
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message=f"An unexpected error occurred: {e}")
+
+
+@router.delete("/{chapter_id}", response_model=None)
+def delete_chapter(
+    chapter_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        db_chapter = services.chapters.get_chapter(db, chapter_id)
+        if not db_chapter:
+            raise HTTPException(status_code=404, detail="Chapter not found")
+
+        db_chapter.is_deleted = True
+        db_chapter.deleted_at = datetime.utcnow()
+        db.commit()
+
+        return create_response(success=True, message="Chapter deleted successfully")
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message=f"An unexpected error occurred: {e}")
 
 
 

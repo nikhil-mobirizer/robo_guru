@@ -1,11 +1,12 @@
-from fastapi import Body, APIRouter, Depends, HTTPException, Form
+from fastapi import Body, APIRouter, Depends, HTTPException, Form, Query
 from sqlalchemy.orm import Session
 from typing import List, Optional, Dict
 import schemas
 from database import get_db
 from services.classes import get_class_by_level ,create_class_in_db, get_all_classes, get_class, create_response
 from services.auth import get_current_user  
-
+from models import EducationLevel, Class
+from datetime import datetime
 
 router = APIRouter()
 
@@ -60,13 +61,12 @@ def read_classes(
 
 @router.get("/", response_model=None)
 def read_all_classes(
-    request: schemas.ReadClassesRequest, 
+    limit: int = Query(10, description="Number of records to retrieve"),
+    name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),   
 ):
     try:
-        limit = request.limit
-        name = request.name
         classes_list = get_all_classes(db, limit=limit, name=name)
         if not classes_list:
             return create_response(success=False, message="No classes found for this level")
@@ -112,3 +112,75 @@ def read_class(
     except Exception as e:
         return create_response(success=False, message=f"An unexpected error occurred: {str(e)}")
 
+@router.put("/{class_id}", response_model=None)
+def update_class(
+    class_id: int,
+    class_data: schemas.ClassUpdate,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        # Fetch class by ID
+        db_class = db.query(Class).filter(Class.id == class_id, Class.is_deleted == False).first()
+        if not db_class:
+            return create_response(success=False, message="Class not found")
+        
+        # Validate level_id if provided
+        if class_data.level_id:
+            level_exists = db.query(EducationLevel).filter(
+                EducationLevel.id == class_data.level_id,
+                EducationLevel.is_deleted == False
+            ).first()
+            if not level_exists:
+                raise HTTPException(status_code=400, detail="Invalid level_id provided")
+
+        if class_data.name:
+            db_class.name = class_data.name
+        if class_data.tagline:
+            db_class.tagline = class_data.tagline
+        if class_data.image_link:
+            db_class.image_link = class_data.image_link
+        if class_data.level_id:
+            db_class.level_id = class_data.level_id
+
+        db.add(db_class)
+        db.commit()
+        db.refresh(db_class)
+
+        response_data = {
+            "id": db_class.id,
+            "name": db_class.name,
+            "level_id": db_class.level_id,
+            "tagline": db_class.tagline,
+            "image_link": db_class.image_link,
+        }
+        return create_response(success=True, message="Class updated successfully", data=response_data)
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message=f"An unexpected error occurred: {str(e)}")
+
+@router.delete("/{class_id}", response_model=None)
+def delete_class(
+    class_id: int,
+    db: Session = Depends(get_db),
+    current_user: str = Depends(get_current_user),
+):
+    try:
+        # Fetch class by ID
+        db_class = db.query(Class).filter(Class.id == class_id, Class.is_deleted == False).first()
+        if not db_class:
+            raise HTTPException(status_code=404, detail="Class not found")
+
+        # Soft delete
+        db_class.is_deleted = True
+        db_class.deleted_at = datetime.utcnow()
+
+        db.add(db_class)
+        db.commit()
+
+        return create_response(success=True, message="Class deleted successfully")
+    except HTTPException as e:
+        return create_response(success=False, message=e.detail)
+    except Exception as e:
+        return create_response(success=False, message=f"An unexpected error occurred: {str(e)}")
