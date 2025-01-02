@@ -12,7 +12,7 @@ from datetime import datetime
 router = APIRouter()
 
 
-@router.post("/", response_model=None)
+@router.post("/create", response_model=None)
 def create_chapter(
     chapter: schemas.ChapterCreate = Body(...),
     db: Session = Depends(get_db),
@@ -34,7 +34,7 @@ def create_chapter(
     except Exception as e:
         return create_response(success=False, message="An unexpected error occurred")
 
-@router.get("/", response_model=None)
+@router.get("/read_all_chapter", response_model=None)
 def read_all_chapters(
     limit: int = Query(10, description="Number of records to retrieve"),
     name: Optional[str] = Query(None, description="Filter by class name"),
@@ -44,7 +44,7 @@ def read_all_chapters(
     try:
         chapters_list = services.chapters.get_all_chapters(db, limit=limit, name=name)
         if not chapters_list:
-            return create_response(success=False, message="No chapters found for the subject")        
+            return create_response(success=True, message="No chapters found for the subject",data=None)        
         response_data = [
             {
                 "id": sub.id,
@@ -69,7 +69,7 @@ async def get_chapters_by_subject(
     try:
         chapters = services.chapters.get_chapters_by_subject(db, subject_id)
         if not chapters:
-            return create_response(success=False, message="No chapters found for the subject")
+            return create_response(success=True, message="No chapters found for the subject",data=None)
         response_data = [
             {
                 "id": sub.id,

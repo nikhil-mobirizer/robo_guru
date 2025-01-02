@@ -10,7 +10,7 @@ from services.classes import create_response
 from models import Class
 router = APIRouter()
 
-@router.post("/", response_model=None)
+@router.post("/create", response_model=None)
 def create_subject(
     subject: schemas.SubjectCreate = Body(...),
     db: Session = Depends(get_db),
@@ -33,22 +33,27 @@ def create_subject(
         return create_response(success=False, message="An unexpected error occurred")
     
 
-@router.get("/", response_model=None)
+@router.get("/read_subjects_list", response_model=None)
 def read_all_subjects(
     limit: int = Query(10, description="Number of records to retrieve"),
     name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user), 
+    current_user: str = Depends(get_current_user),
 ):
     try:
+        # Fetch subjects from the database
         subjects_list = services.subjects.get_all_subjects(db, limit=limit, name=name)
+        
+        # If no subjects found, return success with null data
         if not subjects_list:
-            return create_response(success=False, message="No subjects found for the class")
+            return create_response(success=True, message="No subjects found for the class", data=None)
+        
+        # Prepare response data if subjects exist
         response_data = [
             {
                 "id": sub.id,
                 "name": sub.name,
-                "class_id":sub.class_id,
+                "class_id": sub.class_id,
                 "tagline": sub.tagline,
                 "image_link": sub.image_link
             }
@@ -56,8 +61,11 @@ def read_all_subjects(
         ]
 
         return create_response(success=True, message="Subjects retrieved successfully", data=response_data)
+    
     except Exception as e:
+        # Handle unexpected errors
         return create_response(success=False, message="An unexpected error occurred")
+
     
 @router.get("/class/{class_id}", response_model=None)
 async def get_subjects_by_class(
@@ -68,7 +76,7 @@ async def get_subjects_by_class(
     try:
         subjects = services.subjects.get_subjects_by_class(db, class_id)
         if not subjects:
-            return create_response(success=False, message="No subjects found for the class")
+            return create_response(success=True, message="No subjects found for the class", data=None)
         response_data = [
             {
                 "id": sub.id,

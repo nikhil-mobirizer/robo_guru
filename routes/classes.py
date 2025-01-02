@@ -10,7 +10,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=None)
+@router.post("/create/", response_model=None)
 def create_class(
     classes: schemas.ClassCreate = Body(...),
     db: Session = Depends(get_db),
@@ -21,7 +21,7 @@ def create_class(
         response_data = {
             "id": created_class.id,
             "name": created_class.name,
-            "level_id": created_class.level_id,
+            "level_id": created_class.level_id,#forgien key
             "tagline": created_class.tagline,
             "image_link": created_class.image_link
         }
@@ -31,17 +31,26 @@ def create_class(
     except Exception as e:
         return create_response(success=False, message="An unexpected error occurred")
     
-
-@router.get("/all_data", response_model=None)
+@router.get("/read_class_list", response_model=None)
 def read_classes(
-    limit: int = 1000,
-    name: str = None,
+    limit: int = Query(10, description="Number of records to retrieve"),
+    name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
-    current_user: str = Depends(get_current_user), 
+    current_user: str = Depends(get_current_user),
 ):
     try:
+        # Fetch the classes from the database
         classes_list = get_all_classes(db, limit=limit, name=name)
 
+        # If the table exists but has no entries, return null for data
+        if not classes_list:
+            return create_response(
+                success=True,
+                message="No class data found",
+                data=None
+            )
+
+        # Prepare the response data if records exist
         response_data = [
             {
                 "id": cls.id,
@@ -49,19 +58,29 @@ def read_classes(
                 "level_id": cls.level_id,
                 "tagline": cls.tagline,
                 "image_link": cls.image_link,
-                "subjects": [subject.name for subject in cls.subjects]  
+                "subjects": [subject.name for subject in cls.subjects],
             }
             for cls in classes_list
         ]
 
-        return create_response(success=True, message="Classes retrieved successfully", data=response_data)
+        return create_response(
+            success=True,
+            message="Classes retrieved successfully",
+            data=response_data
+        )
     except Exception as e:
-        return create_response(success=False, message="An unexpected error occurred")
-    
+        # Handle unexpected errors
+        print(f"Error retrieving classes: {e}")
+        return create_response(
+            success=False,
+            message="An unexpected error occurred",
+            data=None
+        )
 
-@router.get("/", response_model=None)
+
+@router.get("/read_all_data/", response_model=None)
 def read_all_classes(
-    limit: int = Query(10, description="Number of records to retrieve"),
+    limit: int = Query(1000, description="Number of records to retrieve"),
     name: Optional[str] = Query(None, description="Filter by class name"),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),   

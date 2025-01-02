@@ -10,7 +10,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=None)
+@router.post("/create", response_model=None)
 def create_topic(
     topic: schemas.TopicCreate = Body(...),
     db: Session = Depends(get_db),
@@ -31,10 +31,10 @@ def create_topic(
     except HTTPException as e:
         return create_response(success=False, message=e.detail)
     except Exception as e:
-        return create_response(success=False, message="An unexpected error occurred")
+        return create_response(success=False, message=f"An unexpected error occurred: {e}")
 
 
-@router.get("/", response_model=None)
+@router.get("/read_all_topic", response_model=None)
 def read_all_topics(
     limit: int = Query(10, description="Number of records to retrieve"),
     name: Optional[str] = Query(None, description="Filter by class name"),
@@ -44,7 +44,7 @@ def read_all_topics(
     try:
         topics = services.topics.get_all_topics(db, limit=limit, name=name)
         if not topics:
-            return create_response(success=False, message="No topic found for the chapter")
+            return create_response(success=True, message="No topic found for the chapter",data=None)
         response_data = [
             {
                 "id": sub.id,
@@ -71,7 +71,7 @@ def read_topic(
     try:
         db_topic = services.topics.get_topics_by_chapter(db=db, chapter_id=chapter_id)
         if not db_topic:
-            return create_response(success=False, message="No topic found for the chapter")
+            return create_response(success=True, message="No topic found for the chapter",data=None)
         response_data = [
             {
                 "id": sub.id,

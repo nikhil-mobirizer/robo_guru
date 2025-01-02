@@ -40,3 +40,4 @@ def create_topic(db: Session, topic: TopicCreate, chapter_id: int):
 
 # def get_topics(db: Session, skip: int = 0, limit: int = 10):
 #     return db.query(Topic).offset(skip).limit(limit).all()
+

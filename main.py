@@ -1,13 +1,22 @@
-from fastapi import FastAPI, Request, Depends
+from fastapi import FastAPI
+from fastapi.middleware.cors import CORSMiddleware
 from database import engine, get_db
 import models
-from routes import classes, subjects, chapters, topics, login, chat, level, users
+from routes import classes, subjects, chapters, topics, login, chat, level, users, trending
 from services.users import create_superadmin
-
 
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI()
+
+# Add CORS Middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],  
+    allow_credentials=True,
+    allow_methods=["*"],  
+    allow_headers=["*"],  
+)
 
 app.include_router(login.router, tags=["login"])
 app.include_router(users.router, prefix="/users", tags=["Users"])
@@ -17,15 +26,13 @@ app.include_router(subjects.router, prefix="/subjects", tags=["subjects"])
 app.include_router(chapters.router, prefix="/chapters", tags=["chapters"])
 app.include_router(topics.router, prefix="/topics", tags=["topics"])
 app.include_router(chat.router, prefix="/chat", tags=["chat"])
+app.include_router(trending.router, prefix="/trending", tags=["trending"])
+
 
 @app.on_event("startup")
 def on_startup():
     db = next(get_db())
     create_superadmin(db)
-
-
-
-
 
 
 

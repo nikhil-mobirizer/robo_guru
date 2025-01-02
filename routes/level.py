@@ -1,6 +1,6 @@
-from fastapi import APIRouter, Depends, HTTPException, Body
+from fastapi import APIRouter, Depends, HTTPException, Body, Query
 from sqlalchemy.orm import Session
-from typing import List
+from typing import List,Optional
 from database import get_db
 from schemas import EducationLevelCreate, ReadEducationLevelRequest, EducationLevelUpdate
 from models import EducationLevel
@@ -12,7 +12,7 @@ from datetime import datetime
 
 router = APIRouter()
 
-@router.post("/", response_model=None)
+@router.post("/create/", response_model=None)
 def create_level(
     level: EducationLevelCreate = Body(...),
     db: Session = Depends(get_db),
@@ -30,26 +30,24 @@ def create_level(
         return create_response(success=False, message=e.detail)
     except Exception as e:
         return create_response(success=False, message="An unexpected error occurred")
-            
+       
 
-from typing import Optional
-from fastapi import APIRouter, Depends, Query
-from sqlalchemy.orm import Session
-
-router = APIRouter()
-
-@router.get("/", response_model=None)
-def read_all_levels(
+@router.get("/read_list", response_model=None)
+def read_levels_list(
     limit: int = Query(10, description="Number of records to retrieve"),
     name: Optional[str] = Query(None, description="Filter by education level name"),
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),
 ):
     try:
+        # Fetch education levels from the database
         level_list = get_all_education_levels(db, limit=limit, name=name)
-        if not level_list:
-            return create_response(success=False, message="Education Level not found")
         
+        # If table exists but has no entries, return null for data
+        if not level_list:
+            return create_response(success=True, message="Education Level not found", data=None)
+        
+        # Prepare response data if records exist
         response_data = [
             {
                 "id": l.id,
@@ -61,11 +59,12 @@ def read_all_levels(
 
         return create_response(success=True, message="Education Level retrieved successfully", data=response_data)
     except Exception as e:
+        # Handle unexpected errors
         return create_response(success=False, message="An unexpected error occurred")
 
 
 @router.get("/{level_id}", response_model=None)
-def read_level(
+def read_level_id(
     level_id: int = 1000,
     db: Session = Depends(get_db),
     current_user: str = Depends(get_current_user),  
@@ -86,7 +85,7 @@ def read_level(
         return create_response(success=False, message="An unexpected error occurred")
 
 @router.get("/levels/all_data", response_model=None)
-def read_levels(
+def read_level_all_list(
     limit: int = 1000,
     name: str = None,
     db: Session = Depends(get_db),

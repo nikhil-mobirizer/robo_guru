@@ -94,7 +94,7 @@ def generate_seed_data():
 
 # Main script
 def main():
-    mobile_number = "9708188604"
+    mobile_number = "9708188606"
     otp = "1234"
 
     # Step 1: Send OTP

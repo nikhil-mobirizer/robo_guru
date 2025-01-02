@@ -1,7 +1,7 @@
-from pydantic import BaseModel, Field, root_validator
+from pydantic import BaseModel, Field, root_validator, EmailStr
 from typing import Optional, Dict, List
 from sqlalchemy.dialects.postgresql import UUID
-from datetime import datetime
+from datetime import datetime, date
 import uuid
 
 class TopicBase(BaseModel):
@@ -193,9 +193,6 @@ class SessionResponse(SessionBase):
 
 class UserCreate(BaseModel):
     mobile_number: str = Field(..., pattern=r"^\d{10}$")
-    name: Optional[str] = None
-    date_of_birth: Optional[str] = None
-    occupation: Optional[str] = None
     type: str = Field(default="normal")
 
     class Config:
@@ -231,3 +228,28 @@ class CurrentUser(BaseModel):
     user_id: str
     type: str
 
+class UserProfileResponse(BaseModel):
+    id: int
+    name: Optional[str]
+    mobile_number: str
+    email: Optional[str]
+    date_of_birth: Optional[str]
+    occupation: Optional[str]
+    is_verified: bool
+    education_level: Optional[str]
+    user_class: Optional[str]
+    language: Optional[str]
+
+class UpdateUserProfileRequest(BaseModel):
+    name: Optional[str]
+    email: Optional[EmailStr]
+    date_of_birth: Optional[date]
+    occupation: Optional[str]
+    education_level: Optional[str]
+    user_class: Optional[str]
+    language: Optional[str]
+
+class UpdateTrendingTopicRequest(BaseModel):
+    topic_id: int
+    is_trending: bool
+    priority: int = 0

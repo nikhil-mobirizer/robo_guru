@@ -17,6 +17,7 @@ class EducationLevel(Base, BaseMixin):
     name = Column(String, unique=True, index=True, nullable=False)
     description = Column(String, nullable=True)
     classes = relationship("Class", back_populates="education_level")
+    users = relationship("User", back_populates="education")
 
 class Class(Base, BaseMixin):
     __tablename__ = "classes"
@@ -27,6 +28,8 @@ class Class(Base, BaseMixin):
     level_id = Column(Integer, ForeignKey("education_levels.id"))
     education_level = relationship("EducationLevel", back_populates="classes")
     subjects = relationship("Subject", back_populates="class_")
+    users = relationship("User", back_populates="user_class_details")
+    topics = relationship("Topic", back_populates="class_")
 
 class Subject(Base, BaseMixin):
     __tablename__ = "subjects"
@@ -55,10 +58,14 @@ class Topic(Base, BaseMixin):
     details = Column(String, nullable=True)
     tagline = Column(String, nullable=True)
     image_link = Column(String, nullable=True)
-    chapter_id = Column(Integer, ForeignKey("chapters.id"))
-    chapter = relationship("Chapter", back_populates="topics")
+    is_trending = Column(Boolean, default=False)  
+    priority = Column(Integer, default=0)  
 
-# User model
+    chapter_id = Column(Integer, ForeignKey("chapters.id"))
+    class_id = Column(Integer, ForeignKey("classes.id")) 
+    chapter = relationship("Chapter", back_populates="topics")
+    class_ = relationship("Class", back_populates="topics") 
+
 class User(Base, BaseMixin):
     __tablename__ = "users"
     
@@ -71,16 +78,20 @@ class User(Base, BaseMixin):
     email = Column(String, nullable=True)
     date_of_birth = Column(Date, nullable=True)
     occupation = Column(String, nullable=True)
-    image_link = Column(String, nullable=True)
+    education_level = Column(Integer, ForeignKey("education_levels.id"))  
+    user_class = Column(Integer, ForeignKey("classes.id")) 
+    language = Column(String, nullable=True)  
+    profile_image = Column(String, nullable=True) 
 
-    # User type (primary role)
     type = Column(Enum("superadmin", "admin", "staff", "normal", name="user_type"), default="normal")
 
-    # Boolean flags for roles
     is_superadmin = Column(Boolean, default=False)
     is_admin = Column(Boolean, default=False)
     is_staff = Column(Boolean, default=False)
     is_normal = Column(Boolean, default=True)
+
+    education = relationship("EducationLevel", back_populates="users")
+    user_class_details = relationship("Class", back_populates="users")
 
 class SessionModel(Base, BaseMixin):
     __tablename__ = "sessions"
